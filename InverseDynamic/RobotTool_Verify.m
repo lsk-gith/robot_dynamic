@@ -1,0 +1,59 @@
+function[torque] = RobotTool_Verify(q, dq,ddq,dh, m, Pc, Ic)
+%%this is verify the inverse dynamic of Lagrange and newton_euler method,it use peter robot tools
+%@input:q:joint angle for every link,  q(6X1).
+%@input:dq:joint angle velocity for every link,  dq(6X1).
+%@input:ddq:joint angle acculate for every link,  ddq(6X1).
+%@input:g:9.81.
+%@input:dh stanard for modified DH, dh_list = [alpha; a; d; theta];],  DH(4X6).
+%@input:m:the mess of link,  m(1X6).
+%@input:Pc sandard the mess center of link,example:Pc(1,1) standsrd for the center of x axis on first link, Pc(2,1)standsrd for the center of y axis on first link,Pc(3,1)standsrd for the center of z axis on first link.  Pc(3X6).
+%@input:Ic sandard the inertia tensor of link, example:Ic(:,:,1)standard for the first link inertia tensor, and Ic(:,:,1) is a symmetry matrix, Ic(3X3X6).
+
+%@output:taulist : the every link need torque,  taulist(1X6)
+%% prepare data
+alph = dh(1,:);
+a = dh(2,:);
+d = dh(3,:);
+theta = dh(4,:);
+%%
+%建立机械臂模型
+L1= Revolute('d', d(1), 'a', a(1), 'alpha', alph(1),'modified', ...
+    'I', Ic(:,:,1),...
+    'r', Pc(:,1)', ...
+    'm', m(1));
+
+L2 = Revolute('d', d(2), 'a', a(2), 'alpha', alph(2),'modified', ...
+    'I', Ic(:,:,2), ...
+    'r', Pc(:,2)', ...
+    'm', m(2));
+L3 = Revolute('d', d(3), 'a', a(3), 'alpha', alph(3), 'modified', ...
+    'I', Ic(:,:,3), ...
+    'r', Pc(:,3)', ...
+    'm', m(3));
+% alpha=[0,     pi/2,  0,           0,         pi/2,      -pi/2];
+% a=    [0,     0,     -0.264,      -0.237,    0,         0];
+% d=    [0.144, 0,     0,           0.1065,    0.114,     0.0895];
+% theta=[0,     pi/2,  0,           -pi/2,     0,         0];
+L4 = Revolute('d', d(4), 'a', a(4), 'alpha', alph(4), 'modified', ...
+    'I', Ic(:,:,4), ...
+    'r', Pc(:,4)', ...
+    'm', m(4));
+
+L5 = Revolute('d', d(5), 'a', a(5), 'alpha', alph(5), 'modified', ...
+    'I', Ic(:,:,5), ...
+    'r', Pc(:,5)', ...
+    'm', m(5));
+
+L6 = Revolute('d', d(6), 'a', a(6), 'alpha', alph(6), 'modified', ...
+    'I',  Ic(:,:,6), ...
+    'r', Pc(:,6)', ...
+    'm', m(6));
+robot=SerialLink([L1,L2,L3,L4,L5,L6],'name','6dof_arm','comment','LL');  %SerialLink类函数
+
+%%
+%给定初始参数
+q = q + theta';
+%%
+%利用其自带的rne方法计算关节力矩
+torque = robot.rne(q',dq',ddq');
+end
